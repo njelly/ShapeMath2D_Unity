@@ -29,8 +29,10 @@
 
 // *** NOTE: POLYGONS MUST BE CONVEX AND VERTICES MUST GO CLOCKWISE AROUND THE SHAPE!!!! ***
 
+// An example Unity project can be found here: https://github.com/njelly/ShapeMath2D_Unity
+
 using System;
-using System.Numerics;
+using Vector2 = System.Numerics.Vector2;
 
 namespace Tofunaut
 {
@@ -57,6 +59,23 @@ namespace Tofunaut
             vertices[1] = new Vector2(max.X, min.Y);
             vertices[2] = min;
             vertices[3] = new Vector2(min.X, max.Y);
+        }
+
+        public static unsafe void GetBoundingAABB(Vector2[] vertices, out Vector2 aabbMin, out Vector2 aabbMax)
+        {
+            fixed(Vector2* ptr = vertices)
+                GetBoundingAABBUnsafe(ptr, vertices.Length, out aabbMin, out aabbMax);
+        }
+        
+        public static unsafe void GetBoundingAABBUnsafe(Vector2* vertices, int length, out Vector2 aabbMin, out Vector2 aabbMax)
+        {
+            aabbMin = default;
+            aabbMax = default;
+            for (var i = 0; i < length; i++)
+            {
+                aabbMin = new Vector2(MathF.Min(aabbMin.X, vertices[i].X), MathF.Min(aabbMin.Y, vertices[i].Y));
+                aabbMax = new Vector2(MathF.Max(aabbMax.X, vertices[i].X), MathF.Max(aabbMax.Y, vertices[i].Y));
+            }
         }
         
 #endregion AABB
@@ -88,6 +107,94 @@ namespace Tofunaut
         {
             var radiusSum = radiusA + radiusB;
             return (centerB - centerA).LengthSquared() <= radiusSum * radiusSum;
+        }
+
+        public static unsafe void GetBoundingCircle(Vector2[] points, out Vector2 circleCenter, out float circleRadius)
+        {
+            fixed(Vector2* ptr = points)
+                GetBoundingCircleUnsafe(ptr, points.Length, out circleCenter, out circleRadius);
+        }
+
+        /// <summary>
+        /// Implements Welzl's algorithm for finding the smallest bounding circle containing a set of points in O(n) time.
+        /// This website was very helpful: http://www.sunshine2k.de/coding/java/Welzl/Welzl.html
+        /// </summary>
+        public static unsafe void GetBoundingCircleUnsafe(Vector2* points, int length, out Vector2 circleCenter,
+            out float circleRadius)
+        {
+            var pointsOnCircle = stackalloc Vector2[3];
+
+            var numIterations = 0;
+            
+            welzl(length, 0, out circleCenter, out circleRadius);
+
+            void welzl(int numUnchecked, int numPointsOnCircle, out Vector2 c, out float r)
+            {
+                if (numIterations++ > 999)
+                {
+                    c = default;
+                    r = default;
+                    return;
+                }
+                
+                if (numUnchecked <= 0 || numPointsOnCircle == 3)
+                {
+                    calculateCircle(numPointsOnCircle, out c, out r);
+                    return;
+                }
+
+                var p = points[numUnchecked - 1];
+                welzl(numUnchecked - 1, numPointsOnCircle, out c, out r);
+                if (!CircleContainsPoint(c, r, p))
+                {
+                    pointsOnCircle[numPointsOnCircle] = p;
+                    welzl(numUnchecked - 1, numPointsOnCircle + 1, out c, out r);
+                }
+            }
+
+            void calculateCircle(int numPointsOnCircle, out Vector2 c, out float r)
+            {
+                c = default;
+                r = default;
+                switch (numPointsOnCircle)
+                {
+                    case 1:
+                        c = pointsOnCircle[0];
+                        r = 0f;
+                        break;
+                    case 2:
+                        c = (pointsOnCircle[1] + pointsOnCircle[0]) / 2f;
+                        r = (pointsOnCircle[1] - pointsOnCircle[0]).Length() / 2f;
+                        break;
+                    case 3:
+                        GetCircleFromTriangleUnsafe(pointsOnCircle, out c, out r);
+                        break;
+                }
+            }
+        }
+
+        public static unsafe void GetCircleFromTriangle(Vector2[] points, out Vector2 circleCenter,
+            out float circleRadius)
+        {
+            fixed(Vector2* ptr = points)
+                GetCircleFromTriangleUnsafe(ptr, out circleCenter, out circleRadius);
+        }
+
+        public static unsafe void GetCircleFromTriangleUnsafe(Vector2* points, out Vector2 circleCenter,
+            out float circleRadius)
+        {
+            GetLongestEdgeOfPolygonUnsafe(points, 3, out var longestEdge);
+
+            var a = (longestEdge + 1) % 3;
+            var b = (longestEdge + 2) % 3;
+            var aToBMiddle = (points[a] + points[b]) / 2f;
+            var bToCMiddle = (points[b] + points[longestEdge]) / 2f;
+            var perpA = (aToBMiddle - points[a]).RotatedByRadians(MathF.PI / 2f) + aToBMiddle;
+            var perpB = (bToCMiddle - points[b]).RotatedByRadians(MathF.PI / 2f) + bToCMiddle;
+
+            LineIntersectsLine(aToBMiddle, perpA, bToCMiddle, perpB, out circleCenter);
+
+            circleRadius = (points[0] - circleCenter).Length();
         }
         
 #endregion Circle
@@ -372,6 +479,43 @@ namespace Tofunaut
             }
 
             return false;
+        }
+
+        public static unsafe void GetCenterOfPolygon(Vector2[] vertices, out Vector2 center)
+        {
+            fixed(Vector2* ptr = vertices)
+                GetCenterOfPolygonUnsafe(ptr, vertices.Length, out center);
+        }
+
+        public static unsafe void GetCenterOfPolygonUnsafe(Vector2* vertices, int length, out Vector2 center)
+        {
+            center = Vector2.Zero;
+            for (var i = 0; i < length; i++)
+                center += vertices[i];
+
+            center /= length;
+        }
+
+        public static unsafe void GetLongestEdgeOfPolygon(Vector2[] vertices, out int longestEdge)
+        {
+            fixed (Vector2* ptr = vertices)
+                GetLongestEdgeOfPolygonUnsafe(ptr, vertices.Length, out longestEdge);
+        }
+
+        public static unsafe void GetLongestEdgeOfPolygonUnsafe(Vector2* vertices, int length, out int longestEdge)
+        {
+            var longestLengthSquared = (vertices[1] - vertices[0]).LengthSquared();
+            longestEdge = 0;
+            for (var i = 1; i < length; i++)
+            {
+                var nextVertex = (i + 1) / length;
+                var lengthSquared = (vertices[nextVertex] - vertices[i]).LengthSquared();
+                if (!(lengthSquared > longestLengthSquared)) 
+                    continue;
+                
+                longestEdge = i;
+                longestLengthSquared = lengthSquared;
+            }
         }
 
 # endregion

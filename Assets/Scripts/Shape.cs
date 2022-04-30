@@ -1,4 +1,6 @@
 using System;
+using UnityEngine;
+using Vector2 = System.Numerics.Vector2;
 
 namespace Tofunaut.ShapeMath2D_Unity
 {
@@ -9,16 +11,16 @@ namespace Tofunaut.ShapeMath2D_Unity
         Polygon,
     }
     
-    public class Shape
+    public struct Shape
     {
         public ShapeType ShapeType;
         public float CircleRadius;
-        public System.Numerics.Vector2 Center;
-        public System.Numerics.Vector2[] PolygonVertices;
-        public System.Numerics.Vector2 AABBMin;
-        public System.Numerics.Vector2 AABBMax;
+        public Vector2 Center;
+        public Vector2[] PolygonVertices;
+        public Vector2 AABBMin;
+        public Vector2 AABBMax;
 
-        public void Translate(System.Numerics.Vector2 delta)
+        public void Translate(Vector2 delta)
         {
             switch (ShapeType)
             {
@@ -95,6 +97,31 @@ namespace Tofunaut.ShapeMath2D_Unity
                     }
                 default:
                     throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public static void RenderShape(Shape shape, Vector2[] _cachedVertices)
+        {
+            var numVertices = 0;
+            switch (shape.ShapeType)
+            {
+                case ShapeType.AABB:
+                    numVertices = 4;
+                    ShapeMath2D.GetVerticesAABB(shape.AABBMin, shape.AABBMax, _cachedVertices);
+                    break;
+                case ShapeType.Circle:
+                    Gizmos.DrawWireSphere(shape.Center.ToUnityVector2(), shape.CircleRadius);
+                    return;
+                case ShapeType.Polygon:
+                    numVertices = shape.PolygonVertices.Length;
+                    Array.Copy(shape.PolygonVertices, _cachedVertices, shape.PolygonVertices.Length);
+                    break;
+            }
+
+            for (var i = 0; i < numVertices; i++)
+            {
+                var nextIndex = (i + 1) % numVertices;
+                Gizmos.DrawLine(_cachedVertices[i].ToUnityVector2(), _cachedVertices[nextIndex].ToUnityVector2());
             }
         }
     }

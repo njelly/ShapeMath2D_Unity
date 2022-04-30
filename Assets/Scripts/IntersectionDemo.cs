@@ -4,7 +4,7 @@ using Vector2 = System.Numerics.Vector2;
 
 namespace Tofunaut.ShapeMath2D_Unity
 {
-    public class GameManager : MonoBehaviour
+    public class IntersectionDemo : MonoBehaviour
     {
         private Shape[] _shapes;
         private int _currentShapeIndex;
@@ -126,39 +126,9 @@ namespace Tofunaut.ShapeMath2D_Unity
                     Gizmos.color = Color.gray;
                 }
                 
-                RenderShape(_shapes[i]);
+                Shape.RenderShape(_shapes[i], _cachedVectors);
                 
                 Gizmos.color = startColor;
-            }
-        }
-
-        private void RenderShape(Shape shape)
-        {
-            var numVertices = 0;
-            switch (shape.ShapeType)
-            {
-                case ShapeType.AABB:
-                    numVertices = 4;
-                    ShapeMath2D.GetVerticesAABB(shape.AABBMin, shape.AABBMax, _cachedVectors);
-                    break;
-                case ShapeType.Circle:
-                    numVertices = _cachedVectors.Length;
-                    for (var i = 0; i < _cachedVectors.Length; i++)
-                    {
-                        var angle = i * Mathf.PI * 2f / numVertices;
-                        _cachedVectors[i] = shape.Center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * shape.CircleRadius;;
-                    }
-                    break;
-                case ShapeType.Polygon:
-                    numVertices = shape.PolygonVertices.Length;
-                    Array.Copy(shape.PolygonVertices, _cachedVectors, shape.PolygonVertices.Length);
-                    break;
-            }
-
-            for (var i = 0; i < numVertices; i++)
-            {
-                var nextIndex = (i + 1) % numVertices;
-                Gizmos.DrawLine(_cachedVectors[i].ToUnityVector2(), _cachedVectors[nextIndex].ToUnityVector2());
             }
         }
     }
