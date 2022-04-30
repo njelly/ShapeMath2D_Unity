@@ -123,20 +123,11 @@ namespace Tofunaut
             out float circleRadius)
         {
             var pointsOnCircle = stackalloc Vector2[3];
-
-            var numIterations = 0;
             
             welzl(length, 0, out circleCenter, out circleRadius);
-
+            
             void welzl(int numUnchecked, int numPointsOnCircle, out Vector2 c, out float r)
             {
-                if (numIterations++ > 999)
-                {
-                    c = default;
-                    r = default;
-                    return;
-                }
-                
                 if (numUnchecked <= 0 || numPointsOnCircle == 3)
                 {
                     calculateCircle(numPointsOnCircle, out c, out r);
@@ -145,11 +136,11 @@ namespace Tofunaut
 
                 var p = points[numUnchecked - 1];
                 welzl(numUnchecked - 1, numPointsOnCircle, out c, out r);
-                if (!CircleContainsPoint(c, r, p))
-                {
-                    pointsOnCircle[numPointsOnCircle] = p;
-                    welzl(numUnchecked - 1, numPointsOnCircle + 1, out c, out r);
-                }
+                if (CircleContainsPoint(c, r, p)) 
+                    return;
+                
+                pointsOnCircle[numPointsOnCircle] = p;
+                welzl(numUnchecked - 1, numPointsOnCircle + 1, out c, out r);
             }
 
             void calculateCircle(int numPointsOnCircle, out Vector2 c, out float r)
@@ -508,7 +499,7 @@ namespace Tofunaut
             longestEdge = 0;
             for (var i = 1; i < length; i++)
             {
-                var nextVertex = (i + 1) / length;
+                var nextVertex = (i + 1) % length;
                 var lengthSquared = (vertices[nextVertex] - vertices[i]).LengthSquared();
                 if (!(lengthSquared > longestLengthSquared)) 
                     continue;
