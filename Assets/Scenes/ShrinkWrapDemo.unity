@@ -168,5 +168,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _randomRadius: 5
-  _numRandomPoints: 2
+  _numRandomPoints: 19
   _maxHullVertices: 20

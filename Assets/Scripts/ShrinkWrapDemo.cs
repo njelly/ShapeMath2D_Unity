@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using Vector2 = System.Numerics.Vector2;
@@ -75,12 +76,14 @@ namespace Tofunaut.ShapeMath2D_Unity
                 AABBMax = _boundingAABBMax,
             }, _cachedVectors);
             
-            // draw bounding circle
+            Gizmos.color = Color.red;
+            ShapeMath2D.GetBoundingPolygon(_randomPoints, _cachedVectors, out var numBoundingPolygonVertices);
+            var boundingPolygonArray = new Vector2[numBoundingPolygonVertices];
+            Array.Copy(_cachedVectors, boundingPolygonArray, numBoundingPolygonVertices);
             Shape.RenderShape(new Shape
             {
-                ShapeType = ShapeType.Circle,
-                Center = _boundingCircleCenter,
-                CircleRadius = _boundingCircleRadius,
+                ShapeType = ShapeType.Polygon,
+                PolygonVertices = boundingPolygonArray,
             }, _cachedVectors);
         }
     }

@@ -38,6 +38,8 @@ namespace Tofunaut
 {
     public static class ShapeMath2D
     {
+        private const float DegToRad = MathF.PI * 180f;
+        
 # region AABB
         
         public static bool AABBContainsPoint(Vector2 min, Vector2 max, Vector2 point) =>
@@ -509,14 +511,69 @@ namespace Tofunaut
             }
         }
 
+        public static unsafe void GetPolygonFromCircle(Vector2 circleCenter, float circleRadius, Vector2[] vertices)
+        {
+            fixed (Vector2* ptr = vertices)
+                GetPolygonFromCircleUnsafe(circleCenter, circleRadius, ptr, vertices.Length);
+        }
+
+        public static unsafe void GetPolygonFromCircleUnsafe(Vector2 circleCenter, float circleRadius,
+            Vector2* vertices, int length)
+        {
+            var angleStep = MathF.PI * 2f / length;
+            for (var i = 0; i < length; i++)
+                vertices[i] = circleCenter + new Vector2(circleRadius, 0f).RotatedByRadians(angleStep * i);
+        }
+
+        public static unsafe void GetBoundingPolygon(Vector2[] points, Vector2[] boundingPolygonVertices, out int numBoundingPolygonVertices)
+        {
+            fixed (Vector2* ptrA = points)
+            {
+                fixed (Vector2* ptrB = boundingPolygonVertices)
+                    GetBoundingPolygonUnsafe(ptrA, points.Length, ptrB, boundingPolygonVertices.Length, out numBoundingPolygonVertices);
+            }
+        }
+
+        public static unsafe void GetBoundingPolygonUnsafe(Vector2* points, int pointsLength,
+            Vector2* boundingPolygonVertices, int boundingPolygonVerticesLength, out int numBoundingPolygonVertices)
+        {
+            numBoundingPolygonVertices = 0;
+            var leftMostIndex = 0;
+            for (var i = 1; i < pointsLength; i++)
+            {
+                if (points[i].X < points[leftMostIndex].X)
+                    leftMostIndex = i;
+            }
+
+            var p = leftMostIndex;
+            do
+            {
+                boundingPolygonVertices[numBoundingPolygonVertices++] = points[p];
+                var q = (p + 1) % pointsLength;
+                for (var i = 0; i < pointsLength; i++)
+                {
+                    if (orientation(points[p], points[i], points[q]) == 2)
+                        q = i;
+                }
+                p = q;
+            } while (p != leftMostIndex);
+            
+            int orientation(Vector2 p, Vector2 q, Vector2 r)
+            {
+                var val = (q.Y - p.Y) * (r.X - q.X) - (q.X - p.X) * (r.Y - q.Y);
+                if (val == 0f) return 0;
+                return val > 0f ? 1 : 2;
+            }
+        }
+
 # endregion
         
 # region Vector2
         
-        public static Vector2 RotatedByDegrees(this Vector2 v, float degree) => v.RotatedByDegrees(degree, Vector2.Zero);
+        public static Vector2 RotatedByDegrees(this Vector2 v, float degrees) => v.RotatedByDegrees(degrees, Vector2.Zero);
 
         public static Vector2 RotatedByDegrees(this Vector2 v, float degrees, Vector2 center) =>
-            v.RotatedByRadians(degrees * MathF.PI / 180, center);
+            v.RotatedByRadians(degrees * DegToRad, center);
 
         public static Vector2 RotatedByRadians(this Vector2 v, float radians) => v.RotatedByRadians(radians, Vector2.Zero);
 
@@ -530,7 +587,54 @@ namespace Tofunaut
                 Y = sinTheta * (v.X - center.X) + cosTheta * (v.Y - center.Y) + center.Y,
             };
         }
+
+        public static float AngleBetween(this Vector2 v, Vector2 p) => MathF.Acos(Vector2.Dot(v, p) / (v.Length() * p.Length()));
+
+        public static float AngleBetweenSigned(this Vector2 v, Vector2 p) =>
+            v.AngleBetween(p) * (PointIsOnLeftSideOfLine(Vector2.Zero, v, p) ? 1f : -1f);
         
 # endregion Vector2
+
+# region Miscellaneous
+
+        private static unsafe void SortArrayUnsafe<T>(T* arr, int left, int right, Comparison<T> comp) where T : unmanaged
+        {
+            if (left >= right) 
+                return;
+
+            var p = partition(left, right);
+            SortArrayUnsafe(arr, left, p - 1, comp);
+            SortArrayUnsafe(arr, p + 1, right, comp);
+            
+            void swap(int a, int b) => (arr[a], arr[b]) = (arr[b], arr[a]);
+
+            int partition(int l, int r)
+            {
+                var pValue = arr[r];
+                var i = l - 1;
+                for (var j = l; j <= r - 1; j++)
+                {
+                    if (comp(arr[j], pValue) >= 0)
+                        continue;
+
+                    i++;
+                    swap(i, j);
+                }
+
+                swap(i + 1, r);
+                return i + 1;
+            }
+        }
+
+        public static float SmallestAngleDifferenceDegrees(float fromDeg, float toDeg) =>
+            SmallestAngleDifferenceRadians(fromDeg * DegToRad, toDeg * DegToRad);
+        
+        public static float SmallestAngleDifferenceRadians(float fromRad, float toRad)
+        {
+            var diff = (toRad - fromRad + MathF.PI) % MathF.PI;
+            return diff < -MathF.PI ? diff + MathF.PI * 2f : diff;
+        }
+
+# endregion Miscellaneous
     }
 }
