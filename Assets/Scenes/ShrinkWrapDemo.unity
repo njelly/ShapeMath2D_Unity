@@ -167,6 +167,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b8593d41d8754b44bce9ce3416ac2090, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _randomRadius: 5
-  _numRandomPoints: 19
+  _randomRadius: 4.65
+  _numRandomPoints: 59
   _maxHullVertices: 20

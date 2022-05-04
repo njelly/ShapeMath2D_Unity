@@ -38,7 +38,8 @@ namespace Tofunaut
 {
     public static class ShapeMath2D
     {
-        private const float DegToRad = MathF.PI * 180f;
+        public const float DegToRad = MathF.PI / 180f;
+        public const float PI2 = MathF.PI * 2f;
         
 # region AABB
         
@@ -217,7 +218,7 @@ namespace Tofunaut
 
         public static bool PointIsOnLeftSideOfLine(Vector2 a, Vector2 b, Vector2 point) =>
             (b.X - a.X) * (point.Y - a.Y) - (b.Y - a.Y) * (point.X - a.X) > 0;
-
+        
         public static bool LineIntersectsLine(Vector2 a1, Vector2 b1, Vector2 a2, Vector2 b2,
             out Vector2 intersection, float tolerance = 0.0001f)
         {
@@ -325,15 +326,6 @@ namespace Tofunaut
             //so finally check if x, y is within both the line segments
             intersection = new Vector2(x, y);
             return true;
-
-            //if (IsInsideLine(lineA, x, y) &&
-            //    IsInsideLine(other, x, y))
-            //{
-            //    return new Vector2(x, y);
-            //}
-
-            //return default (no intersection)
-            // return default;
         }
 
         public static bool LineIntersectsLineSegment(Vector2 a1, Vector2 b1, Vector2 a2, Vector2 b2,

@@ -80,9 +80,9 @@ namespace Tofunaut.ShapeMath2D_Unity
 
             var rotateDelta = 0f;
             if (Input.GetKey(KeyCode.E))
-                rotateDelta += Mathf.PI * 2f;
+                rotateDelta -= ShapeMath2D.PI2;
             if (Input.GetKey(KeyCode.Q))
-                rotateDelta += Mathf.PI * -2f;
+                rotateDelta += ShapeMath2D.PI2;
 
             rotateDelta *= Time.deltaTime;
             _shapes[_currentShapeIndex].Rotate(rotateDelta);
