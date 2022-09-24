@@ -220,111 +220,27 @@ namespace Tofunaut
             (b.X - a.X) * (point.Y - a.Y) - (b.Y - a.Y) * (point.X - a.X) > 0;
         
         public static bool LineIntersectsLine(Vector2 a1, Vector2 b1, Vector2 a2, Vector2 b2,
-            out Vector2 intersection, float tolerance = 0.0001f)
+            out Vector2 intersection)
         {
             intersection = default;
-
+            
             var x1 = a1.X;
             var x2 = b1.X;
             var x3 = a2.X;
             var x4 = b2.X;
-
             var y1 = a1.Y;
             var y2 = b1.Y;
             var y3 = a2.Y;
             var y4 = b2.Y;
-
-            // equations of the form x = c (two vertical lines)
-            if (MathF.Abs(x1 - x2) < tolerance && MathF.Abs(x3 - x4) < tolerance && MathF.Abs(x1 - x3) < tolerance)
+            
+            var d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+            if (Math.Abs(d) <= float.Epsilon)
                 return false;
-
-            //equations of the form y=c (two horizontal lines)
-            if (MathF.Abs(y1 - y2) < tolerance && MathF.Abs(y3 - y4) < tolerance && MathF.Abs(y1 - y3) < tolerance)
-                return false;
-
-            //equations of the form x=c (two vertical parallel lines)
-            if (MathF.Abs(x1 - x2) < tolerance && MathF.Abs(x3 - x4) < tolerance)
-                return false;
-
-            //equations of the form y=c (two horizontal parallel lines)
-            if (MathF.Abs(y1 - y2) < tolerance && MathF.Abs(y3 - y4) < tolerance)
-                return false;
-
-            //general equation of line is y = mx + c where m is the slope
-            //assume equation of line 1 as y1 = m1x1 + c1 
-            //=> -m1x1 + y1 = c1 ----(1)
-            //assume equation of line 2 as y2 = m2x2 + c2
-            //=> -m2x2 + y2 = c2 -----(2)
-            //if line 1 and 2 intersect then x1=x2=x & y1=y2=y where (x,y) is the intersection p
-            //so we will get below two equations 
-            //-m1x + y = c1 --------(3)
-            //-m2x + y = c2 --------(4)
-
-            float x, y;
-
-            //lineA is vertical x1 = x2
-            //slope will be infinity
-            //so lets derive another solution
-            if (MathF.Abs(x1 - x2) < tolerance)
-            {
-                //compute slope of line 2 (m2) and c2
-                var m2 = (y4 - y3) / (x4 - x3);
-                var c2 = -m2 * x3 + y3;
-
-                //equation of vertical line is x = c
-                //if line 1 and 2 intersect then x1=c1=x
-                //subsitute x=x1 in (4) => -m2x1 + y = c2
-                // => y = c2 + m2x1 
-                x = x1;
-                y = c2 + m2 * x1;
-            }
-            //other is vertical x3 = x4
-            //slope will be infinity
-            //so lets derive another solution
-            else if (MathF.Abs(x3 - x4) < tolerance)
-            {
-                //compute slope of line 1 (m1) and c2
-                var m1 = (y2 - y1) / (x2 - x1);
-                var c1 = -m1 * x1 + y1;
-
-                //equation of vertical line is x = c
-                //if line 1 and 2 intersect then x3=c3=x
-                //subsitute x=x3 in (3) => -m1x3 + y = c1
-                // => y = c1 + m1x3 
-                x = x3;
-                y = c1 + m1 * x3;
-            }
-            //lineA & other are not vertical 
-            //(could be horizontal we can handle it with slope = 0)
-            else
-            {
-                //compute slope of line 1 (m1) and c2
-                var m1 = (y2 - y1) / (x2 - x1);
-                var c1 = -m1 * x1 + y1;
-
-                //compute slope of line 2 (m2) and c2
-                var m2 = (y4 - y3) / (x4 - x3);
-                var c2 = -m2 * x3 + y3;
-
-                //solving equations (3) & (4) => x = (c1-c2)/(m2-m1)
-                //plugging x value in equation (4) => y = c2 + m2 * x
-                x = (c1 - c2) / (m2 - m1);
-                y = c2 + m2 * x;
-
-                //verify by plugging intersection p (x, y)
-                //in orginal equations (1) & (2) to see if they intersect
-                //otherwise x,y values will not be finite and will fail this check
-                if (!(MathF.Abs(-m1 * x + y - c1) < tolerance
-                      && MathF.Abs(-m2 * x + y - c2) < tolerance))
-                {
-                    //return default (no intersection)
-                    return false;
-                }
-            }
-
-            //x,y can intersect outside the line segment since line is infinitely long
-            //so finally check if x, y is within both the line segments
-            intersection = new Vector2(x, y);
+            
+            var pre = x1 * y2 - y1 * x2;
+            var post = x3 * y4 - y3 * x4;
+            intersection.X = (pre * (x3 - x4) - (x1 - x2) * post) / d;
+            intersection.Y = (pre * (y3 - y4) - (y1 - y2) * post) / d;
             return true;
         }
 
