@@ -474,6 +474,34 @@ namespace Tofunaut
             }
         }
 
+        /// <summary>
+        /// Writes to the a (start) and b (end) arrays based on the array of vertices passed in. The a and b arrays can
+        /// then be used for line intersection tests.
+        /// </summary>
+        public static unsafe void GetEdges(Vector2[] vertices, Vector2[] a, Vector2[] b)
+        {
+            fixed (Vector2* verticesPtr = vertices)
+            {
+                fixed (Vector2* aPtr = a)
+                {
+                    fixed (Vector2* bPtr = b)
+                    {
+                        GetEdgesUnsafe(verticesPtr, vertices.Length, aPtr, bPtr);
+                    }
+                }
+            }
+        }
+
+        public static unsafe void GetEdgesUnsafe(Vector2* vertices, int verticesLength, Vector2* a, Vector2* b)
+        {
+            for (var i = 0; i < verticesLength; i++)
+            {
+                var bIndex = (i + 1) % verticesLength;
+                a[i] = vertices[i];
+                b[i] = vertices[bIndex];
+            }
+        }
+
 # endregion
         
 # region Vector2
